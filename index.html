@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js" integrity="sha512-N4kV7GkNv7QR7RX9YF/olywyIgIwNvfEe2nZtfyj73HdjCUkAfOBDbcuJ/cTaN04JKRnw1YG1wnUyNKMsNgg3g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="./index.js"></script>
+</head>
+<body>
+    <input type="text" id="input" oninput="update()">
+    <p id="output"></p>
+
+    <button onclick="update(true)">High quality graph</button>
+</body>
+<script>
+    function setup() {
+        createCanvas(0, 0);
+    }
+    let graphWindow = [-5,5,10,10]
+    let form = undefined
+    let form2 = undefined
+
+    let width = 100
+    let height = 100
+    function setup(){
+        windowResized()
+    }
+
+    function windowResized(){
+        width = windowWidth-50
+        graphWindow = [-5*width/100, 5, width/10, 10]
+        update()
+    }
+
+    function update(hq=false){
+        let out = ""
+
+        try{
+            form = Formula.loadFromString(document.getElementById("input").value)
+            
+            if(form.hasVariable()){
+                form2=undefined
+
+                out = ""
+                resizeCanvas(width,100)
+
+                let quality = 100
+                let startTime = Date.now()
+                while(Date.now()-startTime < (hq?1000:10)){
+                    background(255)
+                    renderDefaultGraphThings()
+                    quality *= 10
+
+                    let lastLoc = undefined
+                    for(let i = 0;i<quality;i++){
+                        let x = i/quality*graphWindow[2]+graphWindow[0]
+                        let y = form.clone().evaluate({x:new FNumber(x)}).elements[0].number
+
+                        x=(x-graphWindow[0])/graphWindow[2]*width
+                        y=100-(y+graphWindow[1])/graphWindow[3]*height
+
+                        if(lastLoc && Math.abs(y-lastLoc[1]) < 10) line(lastLoc[0], lastLoc[1], x, y)
+                        lastLoc = [x, y]
+                    }
+                }
+            }else{
+                resizeCanvas(0,0)
+                form2 = form.clone().evaluate()
+    
+                if(form2){
+                    out = form2.getAsString()
+                }else{
+                    out = "0"
+                }
+            }
+        }catch(e){
+            out = "0"
+            console.error(e)
+            return;
+        }
+        if(form){
+            out += "<br>Interpreting as: " + form.getAsString()
+        }
+        document.getElementById("output").innerHTML = out
+    }
+
+    function renderDefaultGraphThings(){
+        stroke(100)
+        line(width/2,0,width/2,height)
+        line(0,height/2,width,height/2)
+        stroke(0)
+    }
+</script>
+</html>
